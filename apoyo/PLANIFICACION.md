@@ -1,6 +1,6 @@
 # Plan de implementación para dos integrantes
 
-Este documento es material de coordinación. El agente evaluado conserva las firmas y salidas
+Este directorio es material auxiliar de coordinación y queda fuera de `agente/`. El agente evaluado conserva las firmas y salidas
 definidas en `contratos.py`, `main.py`, `localizador.py` y `reparador.py`.
 
 ## Contrato congelado
@@ -89,7 +89,7 @@ Entregables de esta parte sugeridos:
 
 Para que ninguno bloquee al otro:
 
-- Integrante 1 usa `localizacion_ejemplo.json` y luego localizaciones manuales de bugs reales.
+- Integrante 1 usa `apoyo/localizacion_ejemplo.json` y luego localizaciones manuales de bugs reales.
 - Integrante 2 usa una instancia falsa de `Metricas`/cliente y prueba solo la salida del localizador.
 - Cada componente se prueba por su comando individual antes de integrarse.
 - No se importan funciones internas del módulo del otro integrante.

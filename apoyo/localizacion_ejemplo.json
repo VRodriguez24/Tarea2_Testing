@@ -4,7 +4,7 @@
       "archivo": "paquete/modulo.py",
       "inicio": 10,
       "fin": 40,
-      "razon": "Región de ejemplo para desarrollar el reparador sin el localizador",
+      "razon": "Región auxiliar para desarrollar el reparador sin el localizador",
       "puntaje": 0.9
     }
   ]

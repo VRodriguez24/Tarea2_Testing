@@ -1,7 +1,7 @@
 """Contrato de la etapa de reparación y verificación.
 
 Responsable: Integrante 1 (tú). Esta parte puede desarrollarse usando el ejemplo guardado
-en ``apoyo/localizacion_ejemplo.json``, sin esperar la implementación del localizador.
+en ``../apoyo/localizacion_ejemplo.json``, sin esperar la implementación del localizador.
 """
 from __future__ import annotations
 
