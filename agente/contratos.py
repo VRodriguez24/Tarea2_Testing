@@ -28,6 +28,7 @@ class Localizacion(TypedDict):
     """Salida pública del localizador y entrada pública del reparador."""
 
     regiones: list[RegionSospechosa]
+    diagnostico: NotRequired[dict]
 
 
 class EdicionCodigo(TypedDict):
@@ -44,6 +45,7 @@ class ResultadoReparacion(TypedDict):
 
     resuelto: bool
     regresion_verificada: NotRequired[bool]
+    error: NotRequired[str]
 
 
 @dataclass(frozen=True)
