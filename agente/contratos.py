@@ -11,7 +11,8 @@ from typing import NotRequired, TypedDict
 
 MODELO = "gemini-3.5-flash-lite"
 LIMITE_INTERNO_SEGUNDOS = 170.0
-MAXIMO_LLAMADAS_LLM = 3
+# Una localización y hasta tres intentos de reparación si alcanza el tiempo.
+MAXIMO_LLAMADAS_LLM = 4
 
 
 class RegionSospechosa(TypedDict):

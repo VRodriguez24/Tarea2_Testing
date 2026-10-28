@@ -1,8 +1,10 @@
 """Etapa de reparación: contexto, parche seguro, verificación y reintentos."""
 from __future__ import annotations
 
+import ast
 import difflib
 import json
+import re
 import shlex
 import sys
 from pathlib import Path
@@ -14,11 +16,51 @@ from infraestructura import obtener_ejecucion, recortar
 
 MAXIMO_LINEAS_REGION = 180
 MAXIMO_REGIONES_CONTEXTO = 3
+MAXIMO_LINEAS_TEST_OBJETIVO = 180
+MINIMO_SEGUNDOS_TERCER_INTENTO = 45.0
 
 
 def _fragmento_numerado(ruta: Path, inicio: int, fin: int) -> str:
     lineas = ruta.read_text(errors="replace").splitlines()
     return "\n".join(f"{numero:>5}: {lineas[numero - 1]}" for numero in range(inicio, fin + 1))
+
+
+def _nombres_tests_objetivo(info: dict) -> set[str]:
+    """Obtiene nombres de tests desde los comandos declarados por el paquete."""
+    nombres: set[str] = set()
+    for comando in info.get("comandos_test", []):
+        if isinstance(comando, str):
+            nombres.update(re.findall(r"\btest_[A-Za-z0-9_]+", comando))
+    return nombres
+
+
+def _contexto_archivo_test(ruta: Path, nombre: str, objetivos: set[str]) -> str:
+    """Extrae las funciones objetivo; usa un fallback corto para fixtures o datos."""
+    texto = ruta.read_text(errors="replace")
+    lineas = texto.splitlines()
+    try:
+        arbol = ast.parse(texto)
+    except (SyntaxError, ValueError, RecursionError):
+        arbol = None
+
+    nodos = [
+        nodo
+        for nodo in ast.walk(arbol)
+        if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and nodo.name in objetivos
+    ] if arbol is not None else []
+    if not nodos:
+        return f"### TEST/DATO {nombre}\n{recortar(texto, 2500)}"
+
+    fragmentos = []
+    for nodo in nodos:
+        inicio = min([nodo.lineno] + [decorador.lineno for decorador in nodo.decorator_list])
+        fin = min(nodo.end_lineno or nodo.lineno, inicio + MAXIMO_LINEAS_TEST_OBJETIVO - 1)
+        fragmentos.append(
+            f"### TEST OBJETIVO {nombre}:{inicio}-{fin}\n"
+            f"{_fragmento_numerado(ruta, inicio, fin)}"
+        )
+    return "\n\n".join(fragmentos)
 
 
 def _normalizar_region(repo: Path, region: Any) -> tuple[Path, int, int]:
@@ -67,6 +109,7 @@ def construir_contexto(repo: Path, info: dict, localizacion: Localizacion) -> st
         raise ValueError("La localización no contiene regiones de código válidas")
 
     tests: list[str] = []
+    objetivos = _nombres_tests_objetivo(info)
     for nombre in info.get("archivos_test", [])[:5]:
         if not isinstance(nombre, str) or not es_archivo_test(nombre):
             continue
@@ -76,7 +119,7 @@ def construir_contexto(repo: Path, info: dict, localizacion: Localizacion) -> st
         except ValueError:
             continue
         if ruta.is_file() and ruta.suffix == ".py":
-            tests.append(f"### TEST {nombre}\n{recortar(ruta.read_text(errors='replace'), 6000)}")
+            tests.append(_contexto_archivo_test(ruta, nombre, objetivos))
 
     codigo = recortar("\n\n".join(fuentes), 25_000)
     codigo_tests = recortar("\n\n".join(tests), 12_000)
@@ -123,6 +166,44 @@ def _diff_cambio(cambio: CambioAplicado, repo: Path) -> str:
     return recortar("".join(partes), 9000)
 
 
+def _feedback_edicion_invalida(repo: Path, datos: Any, error: Exception) -> str:
+    """Describe una propuesta rechazada sin leer rutas inseguras ni contexto excesivo."""
+    partes = [
+        f"El parche no se pudo aplicar o no compila: {type(error).__name__}: {error}",
+        "PROPUESTA JSON ANTERIOR:",
+        recortar(json.dumps(datos, ensure_ascii=False, indent=2), 6000),
+    ]
+    ediciones = datos.get("ediciones", []) if isinstance(datos, dict) else []
+    for indice, edicion in enumerate(ediciones[:5], 1) if isinstance(ediciones, list) else []:
+        if not isinstance(edicion, dict):
+            continue
+        try:
+            ruta = resolver_fuente_segura(repo, edicion.get("archivo"))
+            inicio, fin = edicion.get("inicio"), edicion.get("fin")
+            lineas = ruta.read_text(errors="replace").splitlines()
+            if not isinstance(inicio, int) or isinstance(inicio, bool):
+                continue
+            if not isinstance(fin, int) or isinstance(fin, bool):
+                continue
+            if not 1 <= inicio <= fin <= len(lineas):
+                continue
+            desde, hasta = max(1, inicio - 3), min(len(lineas), fin + 3)
+            relativa = ruta.relative_to(repo.resolve()).as_posix()
+            partes.append(
+                f"CÓDIGO ORIGINAL ALREDEDOR DE EDICIÓN {indice} "
+                f"({relativa}:{desde}-{hasta}):\n"
+                f"{_fragmento_numerado(ruta, desde, hasta)}"
+            )
+        except (OSError, UnicodeError, ValueError):
+            # Una ruta prohibida o inválida ya está explicada por el error principal.
+            continue
+    partes.append(
+        "Corrige la propuesta usando los rangos originales. Conserva todas las líneas "
+        "no relacionadas y verifica la indentación del contenido completo de reemplazo."
+    )
+    return recortar("\n".join(partes), 10_000)
+
+
 def _prompt(info: dict, contexto: str, fallo: str, retroalimentacion: str) -> str:
     return f"""Eres la etapa REPARADORA de un agente de reparación automática de Python.
 Diagnostica la causa raíz y produce el parche mínimo que corrige el bug sin regresiones.
@@ -134,7 +215,15 @@ Devuelve JSON estricto con esta forma:
 
 Reglas: rutas relativas a repo/; rangos inclusivos desde 1; contenido sin números de línea;
 máximo 5 ediciones, 3 archivos y 30000 caracteres; conserva indentación y compatibilidad.
-Si agregas un import, usa el encabezado real incluido y conserva todos los imports no relacionados.
+- Usa el rango mínimo necesario y produce un cambio real; no devuelvas contenido idéntico.
+- El contenido reemplaza todo el rango: incluye completas las líneas que deban conservarse.
+- No elimines asignaciones, ramas, imports ni comportamiento no relacionado con la causa raíz.
+- Todo nombre nuevo debe estar definido o importado por el mismo parche. Si agregas un import,
+  usa el encabezado real incluido y conserva todos los imports no relacionados.
+- Revisa todas las aserciones y casos del TEST OBJETIVO, dando prioridad a la línea exacta del
+  traceback. No rompas casos anteriores del mismo test para hacer pasar el caso que falla.
+- No ocultes excepciones ni debilites validaciones solo para hacer pasar el test.
+- Antes de responder, comprueba mentalmente sintaxis, indentación y compatibilidad con Python 3.8.
 
 COMANDOS OBJETIVO:
 {json.dumps(info.get('comandos_test', []), ensure_ascii=False)}
@@ -151,7 +240,7 @@ RETROALIMENTACIÓN:
 
 
 def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoReparacion:
-    """Genera hasta dos parches; conserva únicamente uno seguro y verificado."""
+    """Genera dos parches y un tercero opcional; conserva solo uno verificado."""
     ejecucion = obtener_ejecucion()
     repo = carpeta / "repo"
     try:
@@ -169,7 +258,13 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
             return {"resuelto": regresion.exitoso, "regresion_verificada": regresion.exitoso}
 
     feedback = ""
-    for intento in (1, 2):
+    for intento in (1, 2, 3):
+        if intento == 3 and ejecucion.restante() < MINIMO_SEGUNDOS_TERCER_INTENTO:
+            print(
+                "[reparador] tercer intento omitido: no quedan 45 segundos",
+                file=sys.stderr,
+            )
+            break
         if ejecucion.restante(reserva=8) < 5:
             break
         datos, error = ejecucion.generar_json(
@@ -184,7 +279,7 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
         try:
             cambio = aplicar_ediciones(repo, datos)
         except Exception as exc:
-            feedback = f"El parche no se pudo aplicar o no compila: {type(exc).__name__}: {exc}"
+            feedback = _feedback_edicion_invalida(repo, datos, exc)
             print(f"[reparador intento {intento}] {feedback}", file=sys.stderr)
             continue
 
@@ -218,8 +313,18 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
         if regresion.exitoso:
             return {"resuelto": True, "regresion_verificada": True}
         if regresion.agoto_tiempo:
-            # El evaluador externo todavía puede aprobar el parche; se conserva el objetivo válido.
-            return {"resuelto": True, "regresion_verificada": False}
+            cambio.revertir()
+            feedback = (
+                "El parche pasó el objetivo, pero la regresión agotó el tiempo y no pudo "
+                "verificarse. El cambio fue revertido; propón un parche mínimo y eficiente.\n"
+                f"PARCHE ANTERIOR:\n{diff}\n"
+                f"SALIDA DE REGRESIÓN:\n{recortar(regresion.salida, 3000)}"
+            )
+            print(
+                f"[reparador intento {intento}] regresión agotó el tiempo; parche revertido",
+                file=sys.stderr,
+            )
+            continue
 
         cambio.revertir()
         feedback = (

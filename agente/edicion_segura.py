@@ -80,6 +80,11 @@ def _validar_y_normalizar(repo: Path, datos: Any) -> list[tuple[Path, int, int, 
             raise ValueError(f"Rango fuera de límites en {ruta.name}: {inicio}-{fin}")
         if not isinstance(contenido, str):
             raise ValueError("contenido debe ser texto")
+        lineas_originales = ruta.read_text(errors="replace").splitlines()
+        if lineas_originales[inicio - 1 : fin] == contenido.splitlines():
+            raise ValueError(
+                f"La edición no produce cambios en {ruta.name}:{inicio}-{fin}"
+            )
         caracteres += len(contenido)
         rangos.setdefault(ruta, []).append((inicio, fin))
         resultado.append((ruta, inicio, fin, contenido))

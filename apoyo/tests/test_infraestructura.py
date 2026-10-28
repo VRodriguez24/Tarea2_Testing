@@ -33,7 +33,7 @@ class InfraestructuraTests(unittest.TestCase):
     def test_error_permanente_de_api_no_reintenta_con_esperas(self):
         anterior = os.environ.pop("GEMINI_API_KEY", None)
         try:
-            ejecucion = EjecucionAgente(Metricas(), limite_segundos=5)
+            ejecucion = EjecucionAgente(Metricas(), limite_segundos=40)
             inicio = time.perf_counter()
             datos, error = ejecucion.generar_json("prompt", reserva=1)
             self.assertIsNone(datos)
@@ -43,6 +43,16 @@ class InfraestructuraTests(unittest.TestCase):
         finally:
             if anterior is not None:
                 os.environ["GEMINI_API_KEY"] = anterior
+
+    def test_no_inicia_api_si_no_cabe_su_timeout(self):
+        ejecucion = EjecucionAgente(Metricas(), limite_segundos=10)
+        with unittest.mock.patch.object(
+            ejecucion, "_obtener_cliente", side_effect=AssertionError("no debe llamarse")
+        ) as cliente:
+            datos, error = ejecucion.generar_json("prompt", reserva=1)
+        self.assertIsNone(datos)
+        self.assertIn("Sin tiempo seguro", error)
+        cliente.assert_not_called()
 
     def test_timeout_de_api_es_error_temporal(self):
         self.assertTrue(

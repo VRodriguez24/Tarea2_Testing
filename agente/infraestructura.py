@@ -23,6 +23,9 @@ from contratos import (
     obtener_metricas,
 )
 
+TIMEOUT_API_SEGUNDOS = 25.0
+MARGEN_API_SEGUNDOS = 2.0
+
 
 class PresupuestoAgotado(RuntimeError):
     """No queda tiempo seguro para comenzar una nueva operación."""
@@ -113,7 +116,9 @@ class EjecucionAgente:
             from google.genai import types
 
             # Evita que una petición de red consuma por sí sola el límite global del bug.
-            self._cliente = genai.Client(http_options=types.HttpOptions(timeout=25_000))
+            self._cliente = genai.Client(
+                http_options=types.HttpOptions(timeout=int(TIMEOUT_API_SEGUNDOS * 1000))
+            )
         return self._cliente
 
     @staticmethod
@@ -138,12 +143,13 @@ class EjecucionAgente:
             return None, "Se alcanzó el máximo de respuestas del LLM"
 
         ultimo_error = ""
+        minimo_disponible = TIMEOUT_API_SEGUNDOS + MARGEN_API_SEGUNDOS
         for espera in (0, 1, 2, 4, 8):
             if espera:
-                if self.restante(reserva) <= espera + 2:
+                if self.restante(reserva) <= espera + minimo_disponible:
                     break
                 time.sleep(espera)
-            if self.restante(reserva) < 3:
+            if self.restante(reserva) < minimo_disponible:
                 break
             try:
                 cliente = self._obtener_cliente()
@@ -173,7 +179,7 @@ class EjecucionAgente:
                 ultimo_error = f"{type(exc).__name__}: {sanitizar_error(exc)}"
                 if not self._es_error_temporal(exc):
                     break
-        return None, ultimo_error or "Sin tiempo para consultar Gemini"
+        return None, ultimo_error or "Sin tiempo seguro para consultar Gemini"
 
 
 _ejecucion: EjecucionAgente | None = None

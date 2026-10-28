@@ -65,6 +65,14 @@ class EdicionSeguraTests(unittest.TestCase):
                  "contenido": "    return 0"},
             ]})
 
+    def test_rechaza_edicion_sin_cambios(self):
+        with self.assertRaisesRegex(ValueError, "no produce cambios"):
+            aplicar_ediciones(self.repo, {"ediciones": [{
+                "archivo": "paquete/calculo.py", "inicio": 1, "fin": 2,
+                "contenido": "def sumar(a, b):\n    return a - b",
+            }]})
+        self.assertEqual(self.fuente.read_bytes(), self.original)
+
 
 if __name__ == "__main__":
     unittest.main()
