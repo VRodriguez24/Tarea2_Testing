@@ -9,7 +9,7 @@ AGENTE = Path(__file__).resolve().parents[2] / "agente"
 sys.path.insert(0, str(AGENTE))
 
 from contratos import Metricas
-from infraestructura import EjecucionAgente, recortar
+from infraestructura import EjecucionAgente, recortar, sanitizar_error
 
 
 class InfraestructuraTests(unittest.TestCase):
@@ -50,6 +50,22 @@ class InfraestructuraTests(unittest.TestCase):
                 RuntimeError("504 DEADLINE_EXCEEDED")
             )
         )
+
+    def test_error_oculta_api_key(self):
+        anterior = os.environ.get("GEMINI_API_KEY")
+        os.environ["GEMINI_API_KEY"] = "clave-super-secreta"
+        try:
+            limpio = sanitizar_error(
+                "falló https://api.test?key=clave-super-secreta GEMINI_API_KEY: otra"
+            )
+            self.assertNotIn("clave-super-secreta", limpio)
+            self.assertNotIn("otra", limpio)
+            self.assertIn("API_KEY_OCULTA", limpio)
+        finally:
+            if anterior is None:
+                os.environ.pop("GEMINI_API_KEY", None)
+            else:
+                os.environ["GEMINI_API_KEY"] = anterior
 
     def test_recorte_conserva_extremos_y_limite(self):
         texto = "INICIO" + "x" * 500 + "FINAL"

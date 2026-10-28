@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import signal
 import subprocess
 import time
@@ -25,6 +26,20 @@ from contratos import (
 
 class PresupuestoAgotado(RuntimeError):
     """No queda tiempo seguro para comenzar una nueva operación."""
+
+
+def sanitizar_error(error: object) -> str:
+    """Evita que credenciales presentes en excepciones alcancen logs o feedback."""
+    texto = str(error)
+    clave = os.environ.get("GEMINI_API_KEY", "")
+    if clave:
+        texto = texto.replace(clave, "[API_KEY_OCULTA]")
+    texto = re.sub(
+        r"(?i)(gemini_api_key|google_api_key|[?&]key)\s*[:=]\s*[^\s&,'\"}]+",
+        r"\1=[API_KEY_OCULTA]",
+        texto,
+    )
+    return texto
 
 
 class EjecucionAgente:
@@ -155,7 +170,7 @@ class EjecucionAgente:
                     return None, "La respuesta JSON no es un objeto"
                 return datos, ""
             except Exception as exc:
-                ultimo_error = f"{type(exc).__name__}: {exc}"
+                ultimo_error = f"{type(exc).__name__}: {sanitizar_error(exc)}"
                 if not self._es_error_temporal(exc):
                     break
         return None, ultimo_error or "Sin tiempo para consultar Gemini"
