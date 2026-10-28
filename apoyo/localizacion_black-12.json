@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "black.py",
+      "inicio": 872,
+      "fin": 992,
+      "puntaje": 118,
+      "razon": "región presente en traceback; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 1006,
+      "fin": 1032,
+      "puntaje": 111,
+      "razon": "región presente en traceback; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 1426,
+      "fin": 1454,
+      "puntaje": 111,
+      "razon": "región presente en traceback; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 716,
+      "fin": 720,
+      "puntaje": 108,
+      "razon": "región presente en traceback; módulo importado por tests"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 700,
+      "fin": 714,
+      "puntaje": 108,
+      "razon": "región presente en traceback; módulo importado por tests"
+    }
+  ]
+}

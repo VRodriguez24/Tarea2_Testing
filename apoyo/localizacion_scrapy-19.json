@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/http/cookies.py",
+      "inicio": 112,
+      "fin": 163,
+      "puntaje": 62,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo; agrupa 11 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/xlib/tx/client.py",
+      "inicio": 739,
+      "fin": 795,
+      "puntaje": 48,
+      "razon": "palabras del test objetivo; agrupa 4 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/xlib/tx/client.py",
+      "inicio": 591,
+      "fin": 702,
+      "puntaje": 48,
+      "razon": "palabras del test objetivo; agrupa 3 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/xlib/tx/_newclient.py",
+      "inicio": 1272,
+      "fin": 1334,
+      "puntaje": 47,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/xlib/tx/client.py",
+      "inicio": 820,
+      "fin": 884,
+      "puntaje": 45,
+      "razon": "palabras del test objetivo; agrupa 2 métodos con evidencia"
+    }
+  ]
+}

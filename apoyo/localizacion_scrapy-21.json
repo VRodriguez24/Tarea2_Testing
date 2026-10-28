@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/downloadermiddlewares/robotstxt.py",
+      "inicio": 20,
+      "fin": 104,
+      "puntaje": 150,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/settings/__init__.py",
+      "inicio": 36,
+      "fin": 63,
+      "puntaje": 44,
+      "razon": "módulo importado por tests; agrupa 3 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/settings/__init__.py",
+      "inicio": 234,
+      "fin": 260,
+      "puntaje": 43,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/exceptions.py",
+      "inicio": 16,
+      "fin": 17,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/exceptions.py",
+      "inicio": 10,
+      "fin": 12,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    }
+  ]
+}

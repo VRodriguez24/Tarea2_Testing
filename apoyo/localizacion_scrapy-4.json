@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/contracts/__init__.py",
+      "inicio": 11,
+      "fin": 91,
+      "puntaje": 150,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/item.py",
+      "inicio": 21,
+      "fin": 22,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/item.py",
+      "inicio": 100,
+      "fin": 102,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/core/engine.py",
+      "inicio": 300,
+      "fin": 305,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/spidermiddlewares/httperror.py",
+      "inicio": 13,
+      "fin": 18,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    }
+  ]
+}

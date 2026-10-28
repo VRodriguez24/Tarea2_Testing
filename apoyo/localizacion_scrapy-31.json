@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/downloadermiddlewares/cookies.py",
+      "inicio": 13,
+      "fin": 91,
+      "puntaje": 147,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/http/cookies.py",
+      "inicio": 173,
+      "fin": 174,
+      "puntaje": 106,
+      "razon": "región presente en traceback; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/http/cookies.py",
+      "inicio": 9,
+      "fin": 82,
+      "puntaje": 104,
+      "razon": "región presente en traceback; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/utils/python.py",
+      "inicio": 123,
+      "fin": 129,
+      "puntaje": 103,
+      "razon": "región presente en traceback; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/utils/python.py",
+      "inicio": 97,
+      "fin": 107,
+      "puntaje": 103,
+      "razon": "región presente en traceback; palabras del test objetivo"
+    }
+  ]
+}

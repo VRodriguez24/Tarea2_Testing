@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "fastapi/applications.py",
+      "inicio": 60,
+      "fin": 219,
+      "puntaje": 136,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "fastapi/exception_handlers.py",
+      "inicio": 18,
+      "fin": 23,
+      "puntaje": 103,
+      "razon": "región presente en traceback; palabras del test objetivo"
+    },
+    {
+      "archivo": "fastapi/applications.py",
+      "inicio": 380,
+      "fin": 426,
+      "puntaje": 35,
+      "razon": "símbolo usado o importado por tests"
+    },
+    {
+      "archivo": "fastapi/routing.py",
+      "inicio": 665,
+      "fin": 712,
+      "puntaje": 35,
+      "razon": "símbolo usado o importado por tests"
+    },
+    {
+      "archivo": "fastapi/encoders.py",
+      "inicio": 13,
+      "fin": 133,
+      "puntaje": 15,
+      "razon": "palabras del test objetivo"
+    }
+  ]
+}

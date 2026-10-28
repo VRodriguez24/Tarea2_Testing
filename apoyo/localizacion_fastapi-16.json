@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "fastapi/encoders.py",
+      "inicio": 9,
+      "fin": 79,
+      "puntaje": 155,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "fastapi/applications.py",
+      "inicio": 173,
+      "fin": 202,
+      "puntaje": 38,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "fastapi/routing.py",
+      "inicio": 277,
+      "fin": 307,
+      "puntaje": 38,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "fastapi/utils.py",
+      "inicio": 39,
+      "fin": 50,
+      "puntaje": 6,
+      "razon": "palabras del test objetivo"
+    },
+    {
+      "archivo": "fastapi/openapi/utils.py",
+      "inicio": 52,
+      "fin": 64,
+      "puntaje": 6,
+      "razon": "palabras del test objetivo"
+    }
+  ]
+}

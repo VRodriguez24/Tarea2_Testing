@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "black.py",
+      "inicio": 2934,
+      "fin": 2962,
+      "puntaje": 149,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 3080,
+      "fin": 3140,
+      "puntaje": 49,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 3143,
+      "fin": 3158,
+      "puntaje": 46,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 2995,
+      "fin": 3077,
+      "puntaje": 44,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo; agrupa 5 métodos con evidencia"
+    },
+    {
+      "archivo": "black.py",
+      "inicio": 2965,
+      "fin": 2992,
+      "puntaje": 17,
+      "razon": "módulo importado por tests; palabras del test objetivo"
+    }
+  ]
+}
