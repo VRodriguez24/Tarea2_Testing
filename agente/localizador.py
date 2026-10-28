@@ -11,15 +11,13 @@ import json
 import os
 from pathlib import Path
 import re
-import signal
-import subprocess
 import sys
-import tempfile
 import time
 import warnings
 from collections import defaultdict
 
 from contratos import Localizacion
+from infraestructura import obtener_ejecucion, recortar
 
 PRESUPUESTO_SEGUNDOS = 40.0
 # Tope absoluto, solo para archivos del traceback o importados por los tests.
@@ -101,52 +99,140 @@ def _modulo(relativa: str) -> str:
 
 
 def _ejecutar_tests(repo: Path, info: dict, limite: float) -> tuple[str, str]:
-    """Ejecuta comandos declarados sin restaurar ni editar archivos del proyecto."""
+    """Ejecuta el script objetivo usando el reloj y control de procesos compartidos."""
     if os.name != "posix":
         return "", "Tests no ejecutados: usar Linux, macOS o WSL con el entorno del bug instalado."
     activacion = repo / "env/bin/activate"
     if not activacion.is_file():
         return "", "Tests no ejecutados: falta preparar repo/env con setup.sh."
-    salidas = []
-    estado = ""
+    carpeta = repo.parent
+    timeout = max(0.0, limite - time.monotonic())
+    resultado = obtener_ejecucion().ejecutar(
+        ["bash", str(carpeta / "run_test.sh")], carpeta, timeout, reserva=115,
+    )
+    if resultado.agoto_tiempo:
+        estado = "Se agotó el tiempo reservado para tests."
+    else:
+        estado = f"Los tests terminaron con código {resultado.codigo}."
+    return recortar(resultado.salida, 60_000), estado
+
+
+def _fragmento(repo: Path, region: dict) -> str:
+    """Devuelve un fragmento numerado de una región determinista ya validada."""
+    ruta = _ruta(repo, region["archivo"])
+    if ruta is None:
+        return ""
+    lineas = _leer(ruta).splitlines()
+    inicio, fin = region["inicio"], region["fin"]
+    return "\n".join(
+        f"{numero:>5}: {lineas[numero - 1]}"
+        for numero in range(inicio, min(fin, len(lineas)) + 1)
+    )
+
+
+def _fragmentos_tests(repo: Path, info: dict) -> str:
+    """Extrae solo las funciones objetivo de los archivos de test declarados."""
+    objetivos = set()
     for comando in info.get("comandos_test", []):
-        restante = limite - time.monotonic()
-        if restante <= 0:
-            break
-        if not isinstance(comando, str):
+        if isinstance(comando, str):
+            objetivos.update(re.findall(r"\btest_[A-Za-z0-9_]+", comando))
+    fragmentos = []
+    for nombre in info.get("archivos_test", [])[:5]:
+        ruta = _ruta(repo, nombre, fuente=False) if isinstance(nombre, str) else None
+        if ruta is None:
             continue
-        # Archivo temporal para no bloquear pipes ni acumular salida sin límite en RAM.
-        with tempfile.TemporaryFile() as salida, tempfile.TemporaryDirectory() as cache:
-            entorno = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", XDG_CACHE_HOME=cache)
-            proceso = None
-            try:
-                proceso = subprocess.Popen(
-                    ["bash", "-c", 'source env/bin/activate\n' + comando],
-                    cwd=repo, stdout=salida, stderr=subprocess.STDOUT,
-                    env=entorno, start_new_session=True,
-                )
-                try:
-                    codigo = proceso.wait(timeout=restante)
-                    estado = f"Último comando terminó con código {codigo}."
-                except subprocess.TimeoutExpired:
-                    estado = "Se agotó el tiempo reservado para tests."
-                finally:
-                    # Incluye descendientes que hayan sobrevivido al proceso principal.
-                    try:
-                        os.killpg(proceso.pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
-                    # Espera acotada: un proceso bloqueado en disco puede tardar en morir.
-                    try:
-                        proceso.wait(timeout=2)
-                    except subprocess.TimeoutExpired:
-                        pass
-                salida.seek(0, 2)
-                salida.seek(max(0, salida.tell() - 60_000))
-                salidas.append(salida.read().decode("utf-8", errors="replace"))
-            except OSError as error:
-                estado = f"No se pudieron ejecutar los tests: {error}"
-    return "\n".join(salidas), estado
+        texto = _leer(ruta)
+        lineas = texto.splitlines()
+        arbol = _arbol(texto)
+        nodos = [
+            nodo for nodo in ast.walk(arbol)
+            if isinstance(nodo, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and nodo.name in objetivos
+        ] if arbol else []
+        for nodo in nodos:
+            inicio = min([nodo.lineno] + [d.lineno for d in nodo.decorator_list])
+            fin = min(nodo.end_lineno or nodo.lineno, inicio + 119)
+            contenido = "\n".join(
+                f"{numero:>5}: {lineas[numero - 1]}"
+                for numero in range(inicio, fin + 1)
+            )
+            fragmentos.append(f"### TEST {nombre}:{inicio}-{fin}\n{contenido}")
+    return recortar("\n\n".join(fragmentos), 8_000)
+
+
+def _ordenar_con_llm(
+    repo: Path, info: dict, salida: str, candidatos: list[dict]
+) -> list[dict]:
+    """Pide a Gemini ordenar candidatos; ante cualquier error conserva el ranking local."""
+    if not candidatos:
+        return []
+    completos = []
+    for region in candidatos[:3]:
+        completos.append(
+            f"### {region['archivo']}:{region['inicio']}-{region['fin']}\n"
+            f"Señal: {region.get('razon', '')}\n{_fragmento(repo, region)}"
+        )
+    resumen = [
+        {clave: region.get(clave) for clave in ("archivo", "inicio", "fin", "razon", "puntaje")}
+        for region in candidatos[:8]
+    ]
+    prompt = f"""Eres la etapa LOCALIZADORA de un agente de reparación automática de Python.
+Ordena entre una y cinco de las regiones candidatas que probablemente contienen la causa raíz.
+Usa solo la evidencia incluida. No inventes rutas ni rangos y no propongas un parche.
+Devuelve exclusivamente JSON estricto:
+{{"regiones":[{{"archivo":"ruta.py","inicio":1,"fin":20,"razon":"explicación breve","puntaje":0.9}}]}}
+
+COMANDOS OBJETIVO:
+{json.dumps(info.get('comandos_test', []), ensure_ascii=False)}
+
+FALLO OBSERVADO:
+{recortar(salida, 10_000)}
+
+CANDIDATOS DETERMINISTAS:
+{json.dumps(resumen, ensure_ascii=False)}
+
+CÓDIGO DE LAS TRES REGIONES PRINCIPALES:
+{recortar(chr(10).join(completos), 24_000)}
+
+FRAGMENTOS DE TEST OBJETIVO:
+{_fragmentos_tests(repo, info) or 'No se pudo extraer una función objetivo.'}
+"""
+    datos, _ = obtener_ejecucion().generar_json(prompt, reserva=100)
+    regiones_modelo = datos.get("regiones") if isinstance(datos, dict) else None
+    if not isinstance(regiones_modelo, list):
+        return candidatos[:5]
+
+    por_rango = {
+        (r["archivo"], r["inicio"], r["fin"]): r
+        for r in candidatos
+    }
+    resultado = []
+    seleccionadas = set()
+    for propuesta in regiones_modelo:
+        if not isinstance(propuesta, dict):
+            continue
+        clave = (propuesta.get("archivo"), propuesta.get("inicio"), propuesta.get("fin"))
+        original = por_rango.get(clave)
+        if original is None or clave in seleccionadas:
+            continue
+        validada = dict(original)
+        if isinstance(propuesta.get("razon"), str):
+            validada["razon"] = propuesta["razon"][:400]
+        puntaje = propuesta.get("puntaje")
+        if isinstance(puntaje, (int, float)) and not isinstance(puntaje, bool):
+            validada["puntaje"] = max(0.0, min(1.0, float(puntaje)))
+        resultado.append(validada)
+        seleccionadas.add(clave)
+        if len(resultado) == 5:
+            break
+    for candidato in candidatos:
+        if len(resultado) == 5:
+            break
+        clave = (candidato["archivo"], candidato["inicio"], candidato["fin"])
+        if clave not in seleccionadas:
+            resultado.append(candidato)
+            seleccionadas.add(clave)
+    return resultado
 
 
 def _evidencia_tests(repo: Path, info: dict) -> tuple[set[str], set[str], set[str]]:
@@ -328,7 +414,14 @@ def localizar(carpeta: Path, info: dict) -> Localizacion:
                           "puntaje": puntos, "razon": razon})
         if len(resultado) == 5:
             break
-    return {"regiones": resultado}
+    regiones = _ordenar_con_llm(repo, info, salida, resultado)
+    return {
+        "regiones": regiones,
+        "diagnostico": {
+            "salida": recortar(salida, 12_000),
+            "estado": estado,
+        },
+    }
 
 
 if __name__ == "__main__":

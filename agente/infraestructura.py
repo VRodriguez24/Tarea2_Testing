@@ -106,7 +106,10 @@ class EjecucionAgente:
         descripcion = f"{type(exc).__name__}: {exc}".lower()
         return any(
             marca in descripcion
-            for marca in ("429", "503", "resource_exhausted", "unavailable", "temporarily")
+            for marca in (
+                "429", "503", "504", "resource_exhausted", "unavailable",
+                "deadline_exceeded", "temporarily", "timed out",
+            )
         )
 
     def generar_json(

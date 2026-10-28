@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'agente'))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'agente'))
 import localizador
 
 
@@ -88,6 +88,40 @@ class LocalizadorTests(unittest.TestCase):
         with patch.object(localizador, 'PRESUPUESTO_SEGUNDOS', 0.0):
             regiones = self.ejecutar()
         self.assertEqual({r['archivo'] for r in regiones}, {'operaciones.py'})
+
+    def test_gemini_solo_puede_reordenar_candidatos_validados(self):
+        candidatos = [
+            {'archivo': 'operaciones.py', 'inicio': 1, 'fin': 2,
+             'razon': 'ranking local', 'puntaje': 35},
+            {'archivo': 'operaciones.py', 'inicio': 4, 'fin': 5,
+             'razon': 'ranking local', 'puntaje': 8},
+        ]
+        respuesta = {
+            'regiones': [
+                {'archivo': '../escape.py', 'inicio': 1, 'fin': 2, 'puntaje': 1},
+                {'archivo': 'operaciones.py', 'inicio': 4, 'fin': 5,
+                 'razon': 'mejor explicación', 'puntaje': 0.8},
+            ]
+        }
+        ejecucion = unittest.mock.Mock()
+        ejecucion.generar_json.return_value = (respuesta, '')
+        with patch.object(localizador, 'obtener_ejecucion', return_value=ejecucion):
+            regiones = localizador._ordenar_con_llm(
+                self.repo, self.info, 'AssertionError', candidatos
+            )
+        self.assertEqual(regiones[0]['inicio'], 4)
+        self.assertEqual(regiones[0]['razon'], 'mejor explicación')
+        self.assertEqual(len(regiones), 2)
+        self.assertTrue(all(r['archivo'] == 'operaciones.py' for r in regiones))
+
+    def test_contexto_llm_incluye_solo_test_objetivo(self):
+        (self.repo / 'tests/test_operaciones.py').write_text(
+            'def test_otro():\n    assert False\n\n'
+            'def test_suma():\n    assert sumar(2, 3) == 5\n'
+        )
+        fragmento = localizador._fragmentos_tests(self.repo, self.info)
+        self.assertIn('def test_suma', fragmento)
+        self.assertNotIn('def test_otro', fragmento)
 
 
 if __name__ == '__main__':

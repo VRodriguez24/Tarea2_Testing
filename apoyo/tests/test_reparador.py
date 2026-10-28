@@ -67,6 +67,18 @@ class ReparadorTests(unittest.TestCase):
         self.assertIn("paquete/calculo.py:1-2", contexto)
         self.assertIn("assert sumar", contexto)
 
+    def test_contexto_incluye_encabezado_para_editar_imports(self):
+        self.fuente.write_text(
+            "from decimal import Decimal\n\n\n"
+            "def sumar(a, b):\n    return a - b\n"
+        )
+        localizacion = {"regiones": [{
+            "archivo": "paquete/calculo.py", "inicio": 4, "fin": 5,
+        }]}
+        contexto = construir_contexto(self.repo, self.info, localizacion)
+        self.assertIn("### ENCABEZADO paquete/calculo.py:1-5", contexto)
+        self.assertIn("from decimal import Decimal", contexto)
+
     def test_regresion_revierte_y_segundo_intento_queda_aplicado(self):
         respuestas = [
             {"ediciones": [{"archivo": "paquete/calculo.py", "inicio": 2, "fin": 2,

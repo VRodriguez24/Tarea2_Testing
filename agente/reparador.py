@@ -43,12 +43,21 @@ def _normalizar_region(repo: Path, region: Any) -> tuple[Path, int, int]:
 def construir_contexto(repo: Path, info: dict, localizacion: Localizacion) -> str:
     """Construye contexto acotado sin recorrer ni enviar el repositorio completo."""
     fuentes: list[str] = []
+    encabezados: set[Path] = set()
     for region in localizacion.get("regiones", [])[:MAXIMO_REGIONES_CONTEXTO]:
         try:
             ruta, inicio, fin = _normalizar_region(repo, region)
         except (ValueError, OSError):
             continue
         relativa = ruta.relative_to(repo.resolve()).as_posix()
+        if inicio > 1 and ruta not in encabezados:
+            total = len(ruta.read_text(errors="replace").splitlines())
+            fin_encabezado = min(40, total)
+            fuentes.append(
+                f"### ENCABEZADO {relativa}:1-{fin_encabezado}\n"
+                f"{_fragmento_numerado(ruta, 1, fin_encabezado)}"
+            )
+            encabezados.add(ruta)
         fuentes.append(
             f"### CÓDIGO {relativa}:{inicio}-{fin}\n"
             f"Razón: {str(region.get('razon', ''))[:300]}\n"
@@ -125,6 +134,7 @@ Devuelve JSON estricto con esta forma:
 
 Reglas: rutas relativas a repo/; rangos inclusivos desde 1; contenido sin números de línea;
 máximo 5 ediciones, 3 archivos y 30000 caracteres; conserva indentación y compatibilidad.
+Si agregas un import, usa el encabezado real incluido y conserva todos los imports no relacionados.
 
 COMANDOS OBJETIVO:
 {json.dumps(info.get('comandos_test', []), ensure_ascii=False)}
@@ -167,6 +177,7 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
         )
         if datos is None:
             feedback = f"La respuesta anterior no fue procesable: {error}"
+            print(f"[reparador intento {intento}] {feedback}", file=sys.stderr)
             continue
 
         cambio: CambioAplicado | None = None
@@ -174,9 +185,15 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
             cambio = aplicar_ediciones(repo, datos)
         except Exception as exc:
             feedback = f"El parche no se pudo aplicar o no compila: {type(exc).__name__}: {exc}"
+            print(f"[reparador intento {intento}] {feedback}", file=sys.stderr)
             continue
 
         diff = _diff_cambio(cambio, repo)
+        analisis = str(datos.get("analisis", ""))[:500]
+        print(
+            f"[reparador intento {intento}] análisis: {analisis}\n{recortar(diff, 4000)}",
+            file=sys.stderr,
+        )
         reserva_reintento = 38 if intento == 1 else 5
         objetivo = _ejecutar_objetivo(carpeta, timeout=45, reserva=reserva_reintento)
         if not objetivo.exitoso:
@@ -184,6 +201,11 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
             feedback = (
                 f"Los tests objetivo siguen fallando (código {objetivo.codigo}).\n"
                 f"PARCHE ANTERIOR:\n{diff}\nSALIDA:\n{recortar(objetivo.salida, 7000)}"
+            )
+            print(
+                f"[reparador intento {intento}] objetivo falló:\n"
+                f"{recortar(objetivo.salida, 3000)}",
+                file=sys.stderr,
             )
             continue
 
@@ -204,6 +226,11 @@ def reparar(carpeta: Path, info: dict, localizacion: Localizacion) -> ResultadoR
             "El parche pasa el objetivo pero introduce o mantiene fallos en la regresión. "
             "Propón un cambio más específico.\n"
             f"PARCHE ANTERIOR:\n{diff}\nREGRESIÓN:\n{recortar(regresion.salida, 7000)}"
+        )
+        print(
+            f"[reparador intento {intento}] regresión falló:\n"
+            f"{recortar(regresion.salida, 3000)}",
+            file=sys.stderr,
         )
 
     return {"resuelto": False, "regresion_verificada": False}

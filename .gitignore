@@ -1,2 +1,4 @@
 dataset/
 .runtimes/
+__pycache__/
+*.pyc

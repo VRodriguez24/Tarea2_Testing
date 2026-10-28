@@ -44,6 +44,13 @@ class InfraestructuraTests(unittest.TestCase):
             if anterior is not None:
                 os.environ["GEMINI_API_KEY"] = anterior
 
+    def test_timeout_de_api_es_error_temporal(self):
+        self.assertTrue(
+            EjecucionAgente._es_error_temporal(
+                RuntimeError("504 DEADLINE_EXCEEDED")
+            )
+        )
+
     def test_recorte_conserva_extremos_y_limite(self):
         texto = "INICIO" + "x" * 500 + "FINAL"
         resultado = recortar(texto, 100)
