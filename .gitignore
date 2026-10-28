@@ -1,4 +1,5 @@
 dataset/
 .runtimes/
+resultados/
 __pycache__/
 *.pyc
