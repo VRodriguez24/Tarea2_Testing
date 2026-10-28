@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/spiders/sitemap.py",
+      "inicio": 33,
+      "fin": 54,
+      "puntaje": 144,
+      "razon": "región presente en traceback; símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/utils/sitemap.py",
+      "inicio": 37,
+      "fin": 43,
+      "puntaje": 112,
+      "razon": "región presente en traceback; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/spiders/__init__.py",
+      "inicio": 17,
+      "fin": 95,
+      "puntaje": 44,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo; agrupa 13 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/utils/test.py",
+      "inicio": 23,
+      "fin": 32,
+      "puntaje": 43,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/exceptions.py",
+      "inicio": 48,
+      "fin": 52,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    }
+  ]
+}

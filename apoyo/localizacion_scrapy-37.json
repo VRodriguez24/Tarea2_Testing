@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/utils/python.py",
+      "inicio": 113,
+      "fin": 119,
+      "puntaje": 43,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/utils/python.py",
+      "inicio": 100,
+      "fin": 110,
+      "puntaje": 43,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/http/request/__init__.py",
+      "inicio": 18,
+      "fin": 137,
+      "puntaje": 39,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo; agrupa 6 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/http/request/rpc.py",
+      "inicio": 16,
+      "fin": 35,
+      "puntaje": 36,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/http/request/form.py",
+      "inicio": 20,
+      "fin": 59,
+      "puntaje": 36,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo; agrupa 2 métodos con evidencia"
+    }
+  ]
+}

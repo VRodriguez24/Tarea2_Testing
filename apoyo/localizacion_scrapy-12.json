@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/selector/unified.py",
+      "inicio": 43,
+      "fin": 82,
+      "puntaje": 42,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/http/response/text.py",
+      "inicio": 18,
+      "fin": 118,
+      "puntaje": 39,
+      "razon": "símbolo usado o importado por tests; palabras del test objetivo; agrupa 7 métodos con evidencia"
+    },
+    {
+      "archivo": "scrapy/http/response/html.py",
+      "inicio": 10,
+      "fin": 11,
+      "puntaje": 33,
+      "razon": "símbolo usado o importado por tests"
+    },
+    {
+      "archivo": "scrapy/http/response/xml.py",
+      "inicio": 10,
+      "fin": 11,
+      "puntaje": 33,
+      "razon": "símbolo usado o importado por tests"
+    },
+    {
+      "archivo": "scrapy/selector/lxmlsel.py",
+      "inicio": 11,
+      "fin": 14,
+      "puntaje": 14,
+      "razon": "módulo importado por tests; palabras del test objetivo"
+    }
+  ]
+}

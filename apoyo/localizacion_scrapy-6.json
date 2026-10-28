@@ -1,0 +1,39 @@
+{
+  "regiones": [
+    {
+      "archivo": "scrapy/pipelines/images.py",
+      "inicio": 130,
+      "fin": 144,
+      "puntaje": 55,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests; palabras del test objetivo"
+    },
+    {
+      "archivo": "scrapy/utils/python.py",
+      "inicio": 110,
+      "fin": 120,
+      "puntaje": 43,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/item.py",
+      "inicio": 21,
+      "fin": 22,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/item.py",
+      "inicio": 100,
+      "fin": 102,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    },
+    {
+      "archivo": "scrapy/settings/__init__.py",
+      "inicio": 457,
+      "fin": 479,
+      "puntaje": 41,
+      "razon": "símbolo usado o importado por tests; módulo importado por tests"
+    }
+  ]
+}
